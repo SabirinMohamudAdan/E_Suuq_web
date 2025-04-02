@@ -1,21 +1,19 @@
 import React from "react";
+import iphone from "../../assets/iphone.jpg";
 
-function AllProducts({ image, title, price, description }) {
-  // Haddii price uu jiro, muuji dolar ka hor, haddii aan jirin muuji "Qiime la'aan"
-  const displayPrice = price !== undefined ? `$${price}` : "Qiime la'aan";
-
+function AllProducts(props) {
   return (
-    <div className="border rounded-lg shadow-md p-4 w-64 mx-auto my-4">
+    <div className="border rounded-lg shadow-md p-4 max-w-xs mt-10 ml-20">
       <img
-        src={`http://localhost:4002/allimages/${image}`}
-        alt={title || "Product image"}
-        className="w-full h-40 object-contain rounded-md mb-3"
+        src={`http://localhost:4002/allimages/${props.image}`}
+        alt="Iphone"
+        className="w-full rounded-md"
       />
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-semibold truncate">{title}</h2>
-        <span className="text-lg font-bold ml-2">{displayPrice}</span>
+      <div className="mt-2 flex justify-between items-center">
+        <h2 className="text-lg font-semibold">{props.title}</h2>
+        <span className="text-lg font-bold">${props.price}</span>
       </div>
-      <p className="text-gray-500 text-sm line-clamp-2">{description}</p>
+      <p className="text-gray-500">{props.description}</p>
     </div>
   );
 }
