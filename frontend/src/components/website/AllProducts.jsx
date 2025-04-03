@@ -11,7 +11,7 @@ function AllProducts(props) {
       />
       <div className="mt-2 flex justify-between items-center">
         <h2 className="text-lg font-semibold">{props.title}</h2>
-        <span className="text-lg font-bold">${props.price}</span>
+        <span className="text-lg  font-semibold">${props.price}</span>
       </div>
       <p className="text-gray-500">{props.description}</p>
     </div>
