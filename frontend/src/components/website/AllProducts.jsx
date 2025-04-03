@@ -1,30 +1,31 @@
 import React from "react";
 import PropTypes from 'prop-types';
 
-function AllProducts({ id, image, title, price, description, rating }) {
+function AllProducts({ image, title, price, description, rating }) {
   return (
-    <div className="border rounded-lg shadow-md p-4 max-w-xs mt-10 ml-20 hover:shadow-lg transition-shadow duration-300">
+    <div className="border rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
       <img
-        src={`http://localhost:4002/allimages/${image || 'default-product.jpg'}`}
-        alt={title || "Product image"}
+        src={`http://localhost:4002/allimages/${image || 'default.jpg'}`}
+        alt={title || "Product"}
         className="w-full h-48 object-cover rounded-md"
       />
-      <div className="mt-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold line-clamp-1" title={title}>
-            {title || "Product Name"}
-          </h2>
-          <span className="text-lg font-semibold text-blue-600">
-            ${price ? price.toFixed(2) : "0.00"}
+      <div className="mt-3">
+        <div className="flex justify-between items-center">
+          <h3 className="font-medium text-lg">{title || "Product"}</h3>
+          <span className="font-semibold text-blue-600">
+            ${typeof price === 'number' ? price.toFixed(2) : '0.00'}
           </span>
         </div>
-        <p className="text-gray-500 text-sm line-clamp-2 mb-2">
-          {description || "No description available"}
+        <p className="text-gray-600 text-sm mt-1">
+          {description || "No description"}
         </p>
         {rating && (
-          <div className="flex items-center">
+          <div className="mt-1">
             {[...Array(5)].map((_, i) => (
-              <span key={i} className={i < rating ? "text-yellow-400" : "text-gray-300"}>
+              <span 
+                key={i} 
+                className={i < Math.floor(rating) ? "text-yellow-400" : "text-gray-300"}
+              >
                 ★
               </span>
             ))}
@@ -36,7 +37,6 @@ function AllProducts({ id, image, title, price, description, rating }) {
 }
 
 AllProducts.propTypes = {
-  id: PropTypes.string,
   image: PropTypes.string,
   title: PropTypes.string,
   price: PropTypes.number,
