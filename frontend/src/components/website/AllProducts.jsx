@@ -1,21 +1,52 @@
 import React from "react";
-import iphone from "../../assets/iphone.jpg";
+import PropTypes from 'prop-types';
 
-function AllProducts(props) {
+function AllProducts({ id, image, title, price, description, rating }) {
   return (
-    <div className="border rounded-lg shadow-md p-4 max-w-xs mt-10 ml-20">
+    <div className="border rounded-lg shadow-md p-4 max-w-xs mt-10 ml-20 hover:shadow-lg transition-shadow duration-300">
       <img
-        src={`http://localhost:4002/allimages/${props.image}`}
-        alt="Iphone"
-        className="w-full rounded-md"
+        src={`http://localhost:4002/allimages/${image}`}
+        alt={title || "Product image"}
+        className="w-full h-48 object-cover rounded-md"
       />
-      <div className="mt-2 flex justify-between items-center">
-        <h2 className="text-lg font-semibold">{props.title}</h2>
-        <span className="text-lg  font-semibold">${props.price}</span>
+      <div className="mt-4">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-semibold line-clamp-1" title={title}>
+            {title}
+          </h2>
+          <span className="text-lg font-semibold text-blue-600">
+            ${price?.toFixed(2)}
+          </span>
+        </div>
+        <p className="text-gray-500 text-sm line-clamp-2 mb-2">{description}</p>
+        {rating && (
+          <div className="flex items-center">
+            {[...Array(5)].map((_, i) => (
+              <span key={i} className={i < rating ? "text-yellow-400" : "text-gray-300"}>
+                ★
+              </span>
+            ))}
+          </div>
+        )}
       </div>
-      <p className="text-gray-500">{props.description}</p>
     </div>
   );
 }
+
+AllProducts.propTypes = {
+  id: PropTypes.string,
+  image: PropTypes.string,
+  title: PropTypes.string,
+  price: PropTypes.number,
+  description: PropTypes.string,
+  rating: PropTypes.number
+};
+
+AllProducts.defaultProps = {
+  image: "default-product.jpg",
+  title: "Product Name",
+  price: price,
+  description: "No description available"
+};
 
 export default AllProducts;
