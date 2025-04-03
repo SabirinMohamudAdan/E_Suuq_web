@@ -1,241 +1,156 @@
-
 const productModel = require("../model/productModel");
+const fs = require("fs");
+const path = require("path");
 
 // Create product
 const RegisterProduct = async (req, res) => {
-    try {
-        const newData = new productModel({
-            prName: req.body.prName,
-            description: req.body.description,
-            price: req.body.price,
-            category: req.body.category,
-            image: req.file ? req.file.filename : null 
-        });
-
-        const SaveData = await newData.save();
-        res.status(201).json(SaveData);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Server error" });
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "Product image is required" });
     }
+
+    const newProduct = new productModel({
+      prName: req.body.prName,
+      description: req.body.description,
+      price: parseFloat(req.body.price),
+      category: req.body.category,
+      image: req.file.filename
+    });
+
+    const savedProduct = await newProduct.save();
+    res.status(201).json({
+      message: "Product created successfully",
+      product: savedProduct
+    });
+  } catch (error) {
+    console.error("Create Product Error:", error);
+    res.status(500).json({ 
+      error: "Server error",
+      details: error.message 
+    });
+  }
 };
 
-
-
-//read data
-const readProduct2 = async (req, res) => {
-    try {
-        const readData = await productModel.find()
-        res.status(200).json(readData);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Server error" });
-    }
-};
-
-// end
-
-
-
-
+// Get all products with optional filtering
 const readProduct = async (req, res) => {
-    try {
-        const { category } = req.body; 
-        let filterData = {};
-        if (category) {
-            filterData.category = category;
-        }
-        const readData = await productModel.find(filterData)
-        res.status(200).json(readData);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Server error" });
+  try {
+    const { category, search } = req.body;
+    let filter = {};
+
+    if (category && category !== "All") {
+      filter.category = category;
     }
+
+    if (search) {
+      filter.$or = [
+        { prName: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    const products = await productModel.find(filter);
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Read Products Error:", error);
+    res.status(500).json({ 
+      error: "Server error",
+      details: error.message 
+    });
+  }
 };
 
-
-// Read single product by ID
+// Get single product by ID
 const ReadSingleData = async (req, res) => {
-    try {
-        const GetSingleData = await productModel.findById( req.params.id);
-        if (!GetSingleData) {
-            return res.status(404).json({ error: "Product not found" });
-        }
-        res.status(200).json(GetSingleData);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Server error" });
+  try {
+    const product = await productModel.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
     }
+    res.status(200).json(product);
+  } catch (error) {
+    console.error("Single Product Error:", error);
+    res.status(500).json({ 
+      error: "Invalid product ID",
+      details: error.message 
+    });
+  }
 };
 
 // Update product by ID
 const UpdateData = async (req, res) => {
-    try {
-        const updatedProduct = await productModel.findByIdAndUpdate(
-            req.params.id,
-            {
-                $set: {
-                    prName: req.body.prName,
-                    description: req.body.description,
-                    price: req.body.price,
-                    category: req.body.category,
-                    image: req.file ? req.file.filename : undefined // Only update image if a new one is uploaded
-                }
-            },
-        //     { new: true, runValidators: true } // Returns updated document and applies validation
-        );
+  try {
+    const updates = {
+      prName: req.body.prName,
+      description: req.body.description,
+      price: parseFloat(req.body.price),
+      category: req.body.category,
+    };
 
-        if (!updatedProduct) {
-            return res.status(404).json({ error: "Product not found" });
-        }
-
-        res.status(200).json({ message: "Update successful", updatedProduct });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Server error" });
+    if (req.file) {
+      // Delete old image if new one is uploaded
+      const product = await productModel.findById(req.params.id);
+      if (product.image) {
+        const imagePath = path.join(__dirname, "../uploads", product.image);
+        fs.unlinkSync(imagePath);
+      }
+      updates.image = req.file.filename;
     }
+
+    const updatedProduct = await productModel.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.status(200).json({
+      message: "Product updated successfully",
+      product: updatedProduct
+    });
+  } catch (error) {
+    console.error("Update Product Error:", error);
+    res.status(500).json({ 
+      error: "Server error",
+      details: error.message 
+    });
+  }
 };
 
-
-//delete
-
+// Delete product by ID
 const DeleteData = async (req, res) => {
-    try {
-        const removedata = await productModel.deleteOne({ _id: req.params.id });
-
-        if (removedata.deletedCount === 0) {
-            return res.status(404).json({ error: "Product not found" });
-        }
-
-        res.status(200).json({ message: "Deleted successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Server error" });
+  try {
+    const product = await productModel.findByIdAndDelete(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
     }
+
+    // Delete associated image file
+    if (product.image) {
+      const imagePath = path.join(__dirname, "../uploads", product.image);
+      fs.unlinkSync(imagePath);
+    }
+
+    res.status(200).json({ 
+      message: "Product deleted successfully",
+      deletedProduct: product 
+    });
+  } catch (error) {
+    console.error("Delete Product Error:", error);
+    res.status(500).json({ 
+      error: "Server error",
+      details: error.message 
+    });
+  }
 };
 
-module.exports = { RegisterProduct, readProduct, ReadSingleData, UpdateData , DeleteData, readProduct2};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// const productModel = require("../model/productModel")
-
-// // create product
-
-// const RegisterProduct = async (req, res) => {
-//         try {
-//                 const newData = productModel({
-//                         prName: req.body.prName,
-//                         description: req.body.description,
-//                         price: req.body.price,
-//                         category: req.body.category,
-//                         image: req.file.filename
-       
-//                 })
-//                 const SaveData = await newData.save();
-//                 if (SaveData) {
-//                         res.send(SaveData)
-//                 }
-//         } catch (error) {
-//                 console.log(error)
-//                 res.send({error: "server error"})
-//         }
-// }
-
-
-// const readProduct = async (req, res) => {
-//         try {
-//                 const readData = await productModel.find()
-//                 if (readData) {
-//                         res.send(readData)
-//                 }
-//         } catch (error) {
-//                 console.log(error)
-//                 res.send({error: "server error"})
-//         }
-// }
-
-
-// const ReadSingleData = async (req, res) => {
-//         try {
-//                 const GetSingleData = await productModel.find({ _id: req.params.id })
-//                 if (GetSingleData) {
-//                         res.send(GetSingleData)
-//                 }
-//         } catch (error) {
-//                 console.log(error)
-//         }
-// }
-
-
-// // update section
-
-// const UpdateData = async (req, res) => {
-//         try {
-//                 const PutData = await productModel.updateOne({ _id: req.params.id }, {
-//                         $set: {
-//                         prName: req.body.prName,
-//                         description: req.body.description,
-//                         price: req.body.price,
-//                         category: req.body.category,
-//                         image: req.file.filename
-//                 } })
-//                 if (PutData) {
-//                         res.send("updated success")
-//                 }
-//         } catch (error) {
-//                 console.og(error)
-//         }
-
-// }
-
-
-// module.exports ={ RegisterProduct , readProduct , ReadSingleData, UpdateData}
+module.exports = { 
+  RegisterProduct, 
+  readProduct, 
+  ReadSingleData, 
+  UpdateData, 
+  DeleteData 
+};
