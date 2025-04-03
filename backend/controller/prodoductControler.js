@@ -156,3 +156,151 @@
 // };
 
 
+const productModel = require("../model/productModel");
+const fs = require("fs");
+const path = require("path");
+
+// Create product
+const RegisterProduct = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "Product image is required" });
+    }
+
+    const newProduct = new productModel({
+      prName: req.body.prName,
+      description: req.body.description,
+      price: parseFloat(req.body.price),
+      category: req.body.category,
+      image: req.file.filename
+    });
+
+    const savedProduct = await newProduct.save();
+    res.status(201).json(savedProduct); // Simplified response
+  } catch (error) {
+    console.error("Create Product Error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Get filtered products
+const readProduct = async (req, res) => {
+  try {
+    const { category, search } = req.body;
+    let filter = {};
+
+    if (category && category !== "All") {
+      filter.category = category;
+    }
+
+    if (search) {
+      filter.$or = [
+        { prName: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    const products = await productModel.find(filter);
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Read Products Error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Get all products (simplified version)
+const readProduct2 = async (req, res) => {
+  try {
+    const products = await productModel.find();
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Read Products Error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Get single product
+const ReadSingleData = async (req, res) => {
+  try {
+    const product = await productModel.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    res.status(200).json(product);
+  } catch (error) {
+    console.error("Single Product Error:", error);
+    res.status(500).json({ error: "Invalid product ID" });
+  }
+};
+
+// Update product
+const UpdateData = async (req, res) => {
+  try {
+    const updates = {
+      prName: req.body.prName,
+      description: req.body.description,
+      price: parseFloat(req.body.price),
+      category: req.body.category,
+    };
+
+    if (req.file) {
+      // Delete old image
+      const product = await productModel.findById(req.params.id);
+      if (product?.image) {
+        const imagePath = path.join(__dirname, "../uploads", product.image);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      }
+      updates.image = req.file.filename;
+    }
+
+    const updatedProduct = await productModel.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.error("Update Product Error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Delete product
+const DeleteData = async (req, res) => {
+  try {
+    const product = await productModel.findByIdAndDelete(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    // Delete image if exists
+    if (product.image) {
+      const imagePath = path.join(__dirname, "../uploads", product.image);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+
+    res.status(200).json({ message: "Product deleted successfully" });
+  } catch (error) {
+    console.error("Delete Product Error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+module.exports = { 
+  RegisterProduct, 
+  readProduct, 
+  readProduct2, 
+  ReadSingleData, 
+  UpdateData, 
+  DeleteData 
+};
